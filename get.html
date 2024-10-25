@@ -1,0 +1,122 @@
+<button onclick="handlerequest()">Request</button>
+<div id="n"></div>
+
+<script>
+const fetchOptions = {
+    method: 'GET',
+    mode: 'cors',
+    cache: 'default',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+};
+
+function request() {
+    return fetch("http://localhost:8085/slack/", fetchOptions)
+        .then(response => {
+            if (response.status !== 200) {
+                console.error("HTTP status code: " + response.status);
+                return null;
+            }
+            return response.json(); // Return the JSON data
+        })
+        .catch(error => {
+            console.error("Fetch error: ", error);
+            return null;
+        });
+}
+
+// Function to get user info by user ID
+
+function fetchUsername(userId) {
+    return fetch('http://localhost:8085/slack/getUsername', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: userId }),
+    })
+    .then(response => response.text()) // Use `.text()` if the API returns plain text
+    .catch(error => {
+        console.error('Error fetching username:', error);
+        return null; // Return null in case of error
+    });
+}
+
+
+// Function to get channel info by channel ID
+
+// Convert timestamp to readable date
+function formatDate(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleString();
+}
+
+function handlerequest() {
+    request().then(data => {
+        if (data !== null) {
+            // Process each message
+            Promise.all(
+                data.map(async message => {
+                    // Check if messageBlob exists and is not null
+                    if (!message.messageBlob) {
+                        console.warn("Message blob is undefined for message:", message);
+                        return null; // Skip processing this message
+                    }
+                       
+                    // Try to parse the message blob safely
+                    let messageBlob;
+                    try {
+                        messageBlob = JSON.parse(message.messageBlob);
+                    } catch (error) {
+                        console.error("Failed to parse messageBlob for message:", message, error);
+                        return null; // Skip processing this message
+                    }
+
+                    const userId = messageBlob.user; // Extract user ID from message blob
+                    const channelId = messageBlob.channel; // Extract channel ID from message blob
+
+                    // Fetch user name and channel name
+                    const userName = await fetchUsername(userId); // Wait for the username
+
+                    // Ensure userName is not null
+                    if (!userName) {
+                        console.warn("Username not found for user:", userId);
+                        return null; // Skip processing if username is not found
+                    }
+
+                    return {
+                        user: userName,
+                        text: messageBlob.text, // Assuming this stores the text
+                        timestamp: formatDate(message.timestamp)
+                    };
+                })
+            ).then(messages => {
+                // Filter out null values (skipped messages)
+                const filteredMessages = messages.filter(msg => msg !== null);
+                
+                // Build the formatted HTML
+                let prettyOutput = '';
+                filteredMessages.forEach(message => {
+                    prettyOutput += `
+                        <div class="message">
+                            <p><strong>User:</strong> ${message.user}</p>
+                            <p><strong>Message:</strong> ${message.text}</p>
+                            <p><strong>Timestamp:</strong> ${message.timestamp}</p>
+                            <hr/>
+                        </div>
+                    `;
+                });
+
+                // Update the UI with the formatted messages
+                document.getElementById("n").innerHTML = prettyOutput;
+            });
+        } else {
+            document.getElementById("n").innerHTML = "No data available";
+        }
+    });
+}
+
+
+
+</script>
