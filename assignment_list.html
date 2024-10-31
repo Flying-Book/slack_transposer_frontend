@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f3e5f5;
+            color: #4a235a;
+        }
+        h1 {
+            text-align: center;
+            padding: 20px 0;
+            font-size: 2em;
+            color: #6a1b9a;
+            margin: 0;
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        #assignment-list {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .assignment {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .assignment:last-child {
+            border-bottom: none;
+        }
+        .assignment-title {
+            flex-grow: 1;
+            margin-left: 10px;
+            color: #6a1b9a;
+            text-decoration: none;
+        }
+        .assignment-title.completed {
+            text-decoration: line-through;
+            color: #a0a0a0;
+        }
+        .assignment-date {
+            color: #6a1b9a;
+            font-size: 0.9em;
+        }
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Assignment List</h1>
+    <div id="assignment-list">
+        <!-- Assignments will be loaded here -->
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const fetchOptions = {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'default',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            };
+
+            function fetchAssignments() {
+                return fetch("http://localhost:8085/api/assignments", fetchOptions)
+                    .then(response => {
+                        if (response.status !== 200) {
+                            console.error("HTTP status code: " + response.status);
+                            return null;
+                        }
+                        return response.json();
+                    })
+                    .catch(error => {
+                        console.error("Fetch error: ", error);
+                        return null;
+                    });
+            }
+
+            function loadAssignments() {
+                fetchAssignments().then(data => {
+                    if (data !== null) {
+                        displayAssignments(data);
+                    } else {
+                        document.getElementById("assignment-list").innerHTML = "<p>No assignments available</p>";
+                    }
+                });
+            }
+
+            function displayAssignments(assignments) {
+                // Sort assignments by due date
+                assignments.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+                
+                const assignmentList = document.getElementById("assignment-list");
+                assignmentList.innerHTML = ""; // Clear existing assignments
+
+                assignments.forEach(assignment => {
+                    // Create assignment item
+                    const assignmentItem = document.createElement("div");
+                    assignmentItem.className = "assignment";
+
+                    // Checkbox for completion
+                    const checkbox = document.createElement("input");
+                    checkbox.type = "checkbox";
+                    checkbox.className = "checkbox";
+                    checkbox.onclick = () => toggleCompletion(assignmentItem);
+
+                    // Assignment title
+                    const title = document.createElement("span");
+                    title.className = "assignment-title";
+                    title.textContent = assignment.title;
+
+                    // Due date
+                    const dueDate = document.createElement("span");
+                    dueDate.className = "assignment-date";
+                    dueDate.textContent = new Date(assignment.dueDate).toLocaleDateString();
+
+                    // Append elements to the assignment item
+                    assignmentItem.appendChild(checkbox);
+                    assignmentItem.appendChild(title);
+                    assignmentItem.appendChild(dueDate);
+                    assignmentList.appendChild(assignmentItem);
+                });
+            }
+
+            // Toggle completion status and apply styles
+            function toggleCompletion(assignmentItem) {
+                const title = assignmentItem.querySelector(".assignment-title");
+                title.classList.toggle("completed");
+            }
+
+            // Load assignments on page load
+            loadAssignments();
+        });
+    </script>
+</body>
+</html>
