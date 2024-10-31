@@ -21,132 +21,160 @@
             background-color: #ffffff;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        #assignment-list {
-            max-width: 600px;
+        button {
+            display: block;
             margin: 20px auto;
-            padding: 20px;
+            padding: 10px 20px;
+            background-color: #ba68c8;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #9c27b0;
+        }
+        #assignment-list {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 0 20px;
             background-color: #ffffff;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            list-style-type: none;
         }
-        .assignment {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-        }
-        .assignment:last-child {
-            border-bottom: none;
-        }
-        .assignment-title {
-            flex-grow: 1;
-            margin-left: 10px;
-            color: #6a1b9a;
-            text-decoration: none;
-        }
-        .assignment-title.completed {
-            text-decoration: line-through;
-            color: #a0a0a0;
-        }
-        .assignment-date {
-            color: #6a1b9a;
-            font-size: 0.9em;
-        }
-        .checkbox {
-            width: 20px;
-            height: 20px;
+        #assignment-list li {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
             cursor: pointer;
+            color: #4a235a;
+        }
+        #assignment-list li:hover {
+            background-color: #f1e3f6;
+        }
+        /* Styles for popup modal */
+        #popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            text-align: center;
+            z-index: 1000;
+        }
+        #popup h3 {
+            margin: 0 0 10px;
+            color: #6a1b9a;
+        }
+        #popup button {
+            margin-top: 10px;
+            padding: 5px 15px;
+            background-color: #ba68c8;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #popup button:hover {
+            background-color: #9c27b0;
+        }
+        /* Overlay background */
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(106, 27, 154, 0.5);
+            z-index: 999;
         }
     </style>
 </head>
 <body>
     <h1>Assignment List</h1>
-    <div id="assignment-list">
-        <!-- Assignments will be loaded here -->
+    <button onclick="handleRequest()">Reload Assignments</button>
+    <ul id="assignment-list"></ul>
+
+    <!-- Overlay background for popup -->
+    <div id="overlay" onclick="closePopup()"></div>
+
+    <!-- Popup modal for assignment details -->
+    <div id="popup">
+        <h3 id="popup-title"></h3>
+        <p id="popup-description"></p>
+        <button onclick="closePopup()">Close</button>
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const fetchOptions = {
-                method: 'GET',
-                mode: 'cors',
-                cache: 'default',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            };
+       document.addEventListener("DOMContentLoaded", function() {
+           const fetchOptions = {
+               method: 'GET',
+               mode: 'cors',
+               cache: 'default',
+               headers: {
+                   'Content-Type': 'application/json',
+               },
+           };
 
-            function fetchAssignments() {
-                return fetch("http://localhost:8085/api/assignments", fetchOptions)
-                    .then(response => {
-                        if (response.status !== 200) {
-                            console.error("HTTP status code: " + response.status);
-                            return null;
-                        }
-                        return response.json();
-                    })
-                    .catch(error => {
-                        console.error("Fetch error: ", error);
-                        return null;
-                    });
-            }
+           function request() {
+               return fetch("http://localhost:8085/api/calendar/events", fetchOptions)
+                   .then(response => {
+                       if (response.status !== 200) {
+                           console.error("HTTP status code: " + response.status);
+                           return null;
+                       }
+                       return response.json();
+                   })
+                   .catch(error => {
+                       console.error("Fetch error: ", error);
+                       return null;
+                   });
+           }
 
-            function loadAssignments() {
-                fetchAssignments().then(data => {
-                    if (data !== null) {
-                        displayAssignments(data);
-                    } else {
-                        document.getElementById("assignment-list").innerHTML = "<p>No assignments available</p>";
-                    }
-                });
-            }
+           window.handleRequest = function() {
+               request().then(data => {
+                   if (data !== null) {
+                       displayAssignments(data);
+                   } else {
+                       document.getElementById("assignment-list").innerHTML = "<li>No data available</li>";
+                   }
+               });
+           }
 
-            function displayAssignments(assignments) {
-                // Sort assignments by due date
-                assignments.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-                
-                const assignmentList = document.getElementById("assignment-list");
-                assignmentList.innerHTML = ""; // Clear existing assignments
+           function displayAssignments(assignments) {
+               const listEl = document.getElementById("assignment-list");
+               listEl.innerHTML = "";
+               assignments.forEach(assignment => {
+                   const li = document.createElement("li");
+                   li.textContent = assignment.title;
+                   li.onclick = () => showPopup(assignment.title, assignment.description);
+                   listEl.appendChild(li);
+               });
+           }
 
-                assignments.forEach(assignment => {
-                    // Create assignment item
-                    const assignmentItem = document.createElement("div");
-                    assignmentItem.className = "assignment";
+           function showPopup(title, description) {
+               document.getElementById("popup-title").textContent = title;
+               document.getElementById("popup-description").textContent = description || "No description available";
+               document.getElementById("popup").style.display = 'block';
+               document.getElementById("overlay").style.display = 'block';
+           }
 
-                    // Checkbox for completion
-                    const checkbox = document.createElement("input");
-                    checkbox.type = "checkbox";
-                    checkbox.className = "checkbox";
-                    checkbox.onclick = () => toggleCompletion(assignmentItem);
+           window.closePopup = function() {
+               document.getElementById("popup").style.display = 'none';
+               document.getElementById("overlay").style.display = 'none';
+           }
 
-                    // Assignment title
-                    const title = document.createElement("span");
-                    title.className = "assignment-title";
-                    title.textContent = assignment.title;
-
-                    // Due date
-                    const dueDate = document.createElement("span");
-                    dueDate.className = "assignment-date";
-                    dueDate.textContent = new Date(assignment.dueDate).toLocaleDateString();
-
-                    // Append elements to the assignment item
-                    assignmentItem.appendChild(checkbox);
-                    assignmentItem.appendChild(title);
-                    assignmentItem.appendChild(dueDate);
-                    assignmentList.appendChild(assignmentItem);
-                });
-            }
-
-            // Toggle completion status and apply styles
-            function toggleCompletion(assignmentItem) {
-                const title = assignmentItem.querySelector(".assignment-title");
-                title.classList.toggle("completed");
-            }
-
-            // Load assignments on page load
-            loadAssignments();
-        });
+           // Initial load of assignments
+           handleRequest();
+       });
     </script>
 </body>
 </html>
