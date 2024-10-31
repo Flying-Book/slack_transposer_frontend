@@ -8,13 +8,42 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f3e5f5;
+            color: #4a235a;
+        }
+        h1 {
+            text-align: center;
+            padding: 20px 0;
+            font-size: 2em;
+            color: #6a1b9a;
+            margin: 0;
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         button {
-            margin: 10px;
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #ba68c8;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #9c27b0;
         }
         #calendar {
             max-width: 900px;
             margin: 20px auto;
+            padding: 0 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         /* Styles for popup modal */
         #popup {
@@ -23,7 +52,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: #fff;
+            background-color: #ffffff;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -33,10 +62,19 @@
         }
         #popup h3 {
             margin: 0 0 10px;
+            color: #6a1b9a;
         }
         #popup button {
             margin-top: 10px;
-            padding: 5px 10px;
+            padding: 5px 15px;
+            background-color: #ba68c8;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #popup button:hover {
+            background-color: #9c27b0;
         }
         /* Overlay background */
         #overlay {
@@ -46,14 +84,15 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(106, 27, 154, 0.5);
             z-index: 999;
         }
     </style>
 </head>
 <body>
-    <button onclick="handleRequest()">Request</button>
-    <div id="n"></div>
+    <h1>Message Calendar</h1>
+    <button onclick="handleRequest()">Load Events</button>
+    <div id="n" style="text-align: center; color: #6a1b9a;"></div>
     <div id="calendar"></div>
 
     <!-- Overlay background for popup -->
