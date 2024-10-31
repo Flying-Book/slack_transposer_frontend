@@ -3,7 +3,7 @@ description: "PBL Project for CSA Trimester 1"
 owner_name: Anusha Khobare
 github_username: Flying_Book
 github_repo: "slack_transposer_frontend" 
-baseurl: "/slack_transposer"
+baseurl: "/slack_transposer_frontend"
 future: true
 remote_theme: jekyll/minima
 minima:
