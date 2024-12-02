@@ -34,7 +34,7 @@
             margin: 10px 0 5px;
             color: #6a1b9a;
         }
-        input, textarea, button {
+        input, textarea, select, button {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
@@ -65,6 +65,14 @@
         <label for="description">Description:</label>
         <textarea id="description" name="description" rows="4"></textarea>
 
+        <label for="type">Event Type:</label>
+        <select id="type" name="type">
+            <option value="general">General</option>
+            <option value="meeting">Meeting</option>
+            <option value="conference">Conference</option>
+            <option value="workshop">Workshop</option>
+        </select>
+
         <button type="submit">Add Event</button>
     </form>
 
@@ -75,10 +83,11 @@
             const formData = {
                 date: document.getElementById("date").value,
                 title: document.getElementById("title").value,
-                description: document.getElementById("description").value
+                description: document.getElementById("description").value,
+                type: document.getElementById("type").value  // Capture event type from the select field
             };
 
-            fetch("http://localhost:8085/api/calendar/add_event", {
+            fetch("http://localhost:8085/api/calendar/add_event", {  // Correct the endpoint path if needed
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
