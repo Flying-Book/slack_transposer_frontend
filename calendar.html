@@ -1,80 +1,67 @@
-
+<link rel="stylesheet" href="calendar_features.css">
+<div class="container">
     <h1>Message Calendar</h1>
     <button onclick="handleRequest()">Load Events</button>
     <div id="n" style="text-align: center; color: #6a1b9a;"></div>
     <div id="calendar"></div>
+</div>
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js"></script>
 
-    <div id="overlay" onclick="closePopup()"></div>
-    <div id="popup">
-        <h3 id="popup-title"></h3>
-        <p id="popup-description"></p>
-        <button onclick="closePopup()">Close</button>
-    </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const fetchOptions = {
+            method: 'GET',
+            mode: 'cors',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        };
 
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js"></script>
-    <script>
-       document.addEventListener("DOMContentLoaded", function() {
-           const fetchOptions = {
-               method: 'GET',
-               mode: 'no-cors',
-               cache: 'default',
-               headers: {
-                   'Content-Type': 'application/json',
-               },
-           };
+        // Function to fetch events
+        function request() {
+            return fetch("http://localhost:8085/api/calendar/events", fetchOptions)
+                .then(response => {
+                    if (!response.ok) {
+                        console.error("HTTP status code: " + response.status);
+                        return null;
+                    }
+                    return response.json();
+                })
+                .catch(error => {
+                    console.error("Fetch error: ", error);
+                    return null;
+                });
+        }
 
-           function request() {
-               return fetch("http://localhost:8085/api/calendar/events", fetchOptions)
-                   .then(response => {
-                       if (response.status !== 200) {
-                           console.error("HTTP status code: " + response.status);
-                           return null;
-                       }
-                       return response.json();
-                   })
-                   .catch(error => {
-                       console.error("Fetch error: ", error);
-                       return null;
-                   });
-           }
+        // Handle button click to load events
+        window.handleRequest = function () {
+            request().then(data => {
+                if (data !== null) {
+                    const events = data.map(event => ({
+                        title: event.title,
+                        start: event.date,
+                        description: event.description,
+                        allDay: true, // Add this line
+                    }));
+                    displayCalendar(events);
+                } else {
+                    document.getElementById("n").textContent = "No data available";
+                }
+            });
+        };
 
-           window.handleRequest = function() {
-               request().then(data => {
-                   if (data !== null) {
-                       const events = data.map(event => ({
-                           title: event.title,
-                           description: event.description,
-                           start: event.date
-                       }));
-                       displayCalendar(events);
-                   } else {
-                       document.getElementById("n").innerHTML = "No data available";
-                   }
-               });
-           }
-
-           function displayCalendar(events) {
-               const calendarEl = document.getElementById('calendar');
-               const calendar = new FullCalendar.Calendar(calendarEl, {
-                   initialView: 'dayGridMonth',
-                   events: events,
-                   eventClick: function(info) {
-                       // Show popup with title and description
-                       document.getElementById('popup-title').textContent = info.event.title;
-                       document.getElementById('popup-description').textContent = info.event.extendedProps.description || "No description available";
-                       document.getElementById('popup').style.display = 'block';
-                       document.getElementById('overlay').style.display = 'block';
-                   }
-               });
-               calendar.render();
-           }
-
-           // Close popup
-           window.closePopup = function() {
-               document.getElementById('popup').style.display = 'none';
-               document.getElementById('overlay').style.display = 'none';
-           }
-       });
-    </script>
-</body>
-</html>
+        // Initialize FullCalendar
+        function displayCalendar(events) {
+            const calendarEl = document.getElementById('calendar');
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                events: events,
+                eventDidMount: function (info) {
+                    info.el.setAttribute('title', info.event.extendedProps.description || "No description available");
+                },
+            });
+            calendar.render();
+        }
+    });
+</script>
