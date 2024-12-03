@@ -1,80 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Event</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f3e5f5;
-            color: #4a235a;
-        }
-        h1 {
-            text-align: center;
-            padding: 20px 0;
-            font-size: 2em;
-            color: #6a1b9a;
-            margin: 0;
-            background-color: #ffffff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        form {
-            max-width: 500px;
-            margin: 40px auto;
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        label {
-            display: block;
-            margin: 10px 0 5px;
-            color: #6a1b9a;
-        }
-        input, textarea, select, button {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 1em;
-        }
-        button {
-            background-color: #ba68c8;
-            color: #ffffff;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #9c27b0;
-        }
-    </style>
-</head>
-<body>
-    <h1>Add Event</h1>
-    <form id="addEventForm">
-        <label for="date">Date (YYYY-MM-DD):</label>
-        <input type="date" id="date" name="date" required>
 
-        <label for="title">Title:</label>
-        <input type="text" id="title" name="title" required>
+    <link rel="stylesheet" href="calendar_features.css">
+        <form id="addEventForm">
+            <label for="date">Date (YYYY-MM-DD):</label>
+            <input type="date" id="date" name="date" required>
 
-        <label for="description">Description:</label>
-        <textarea id="description" name="description" rows="4"></textarea>
+            <label for="title">Title:</label>
+            <input type="text" id="title" name="title" required>
 
-        <label for="type">Event Type:</label>
-        <select id="type" name="type">
-            <option value="general">General</option>
-            <option value="meeting">Meeting</option>
-            <option value="conference">Conference</option>
-            <option value="workshop">Workshop</option>
-        </select>
+            <label for="description">Description:</label>
+            <textarea id="description" name="description" rows="4" placeholder="Enter event description here..."></textarea>
 
-        <button type="submit">Add Event</button>
-    </form>
+            <label for="type">Event Type:</label>
+            <select id="type" name="type">
+                <option value="general">General</option>
+                <option value="meeting">Meeting</option>
+                <option value="conference">Conference</option>
+                <option value="workshop">Workshop</option>
+            </select>
+
+            <button type="submit">Add Event</button>
+        </form>
+    </div>
 
     <script>
         document.getElementById("addEventForm").addEventListener("submit", function (event) {
@@ -84,25 +30,25 @@
                 date: document.getElementById("date").value,
                 title: document.getElementById("title").value,
                 description: document.getElementById("description").value,
-                type: document.getElementById("type").value  // Capture event type from the select field
+                type: document.getElementById("type").value
             };
 
-            fetch("http://localhost:8085/api/calendar/add_event", {  // Correct the endpoint path if needed
+            fetch("http://localhost:8085/api/calendar/add_event", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify(formData)
             })
-                .then(response => {
-                    if (response.ok) {
-                        alert("Event added successfully!");
-                        document.getElementById("addEventForm").reset();
-                    } else {
-                        alert("Failed to add event.");
-                    }
-                })
-                .catch(error => console.error("Error adding event:", error));
+            .then(response => {
+                if (response.ok) {
+                    alert("Event added successfully!");
+                    document.getElementById("addEventForm").reset();
+                } else {
+                    alert("Failed to add event.");
+                }
+            })
+            .catch(error => console.error("Error adding event:", error));
         });
     </script>
 </body>

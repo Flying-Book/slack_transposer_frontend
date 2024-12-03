@@ -1,0 +1,105 @@
+/* General styles */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f3e5f5;
+    color: #4a235a;
+    line-height: 1.5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* Form container */
+form {
+    background-color: #ffffff;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    width: 100%;
+}
+
+/* Form heading */
+form h1 {
+    text-align: center;
+    font-size: 1.8em;
+    color: #1d4140;
+    margin-bottom: 20px;
+}
+
+/* Label styles */
+form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #193764;
+}
+
+/* Input and select styles */
+form input[type="date"],
+form input[type="text"],
+form textarea,
+form select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #d1c4e9;
+    border-radius: 5px;
+    font-size: 1em;
+    color: #4a235a;
+    background-color: #f9f6fc;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+form input:focus,
+form textarea:focus,
+form select:focus {
+    border-color: #ba68c8;
+    background-color: #ffffff;
+    outline: none;
+}
+
+/* Textarea specific styles */
+form textarea {
+    resize: vertical;
+}
+
+/* Button styles */
+form button {
+    display: inline-block;
+    width: 100%;
+    padding: 12px 20px;
+    background-color: #ba68c8;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+form button:hover {
+    background-color: #9c27b0;
+    transform: translateY(-3px);
+}
+
+form button:active {
+    background-color: #8e24aa;
+    transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    form {
+        padding: 15px;
+    }
+    form h1 {
+        font-size: 1.5em;
+    }
+}
