@@ -1,67 +1,204 @@
-<link rel="stylesheet" href="calendar_features.css">
-<div class="container">
-    <h1>Message Calendar</h1>
-    <button onclick="handleRequest()">Load Events</button>
-    <div id="n" style="text-align: center; color: #6a1b9a;"></div>
-    <div id="calendar"></div>
-</div>
-<!-- FullCalendar JS -->
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js"></script>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const fetchOptions = {
-            method: 'GET',
-            mode: 'cors',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        };
-
-        // Function to fetch events
-        function request() {
-            return fetch("http://localhost:8085/api/calendar/events", fetchOptions)
-                .then(response => {
-                    if (!response.ok) {
-                        console.error("HTTP status code: " + response.status);
-                        return null;
-                    }
-                    return response.json();
-                })
-                .catch(error => {
-                    console.error("Fetch error: ", error);
-                    return null;
-                });
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.css">
+    <link rel="stylesheet" href="calendar_features.css">
+    <title>Message Calendar</title>
+    <style>
+        /* General body styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f3e5f5;
+            color: #4a235a;
         }
 
-        // Handle button click to load events
-        window.handleRequest = function () {
-            request().then(data => {
-                if (data !== null) {
-                    const events = data.map(event => ({
-                        title: event.title,
-                        start: event.date,
-                        description: event.description,
-                        allDay: true, // Add this line
-                    }));
-                    displayCalendar(events);
-                } else {
-                    document.getElementById("n").textContent = "No data available";
-                }
-            });
-        };
+        /* Header */
+        h1 {
+            text-align: center;
+            padding: 20px 0;
+            font-size: 2.5em;
+            color: #6a1b9a;
+            margin: 0;
+            background-color: #ffffff;
+            border-bottom: 3px solid #ba68c8;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
 
-        // Initialize FullCalendar
-        function displayCalendar(events) {
-            const calendarEl = document.getElementById('calendar');
-            const calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                events: events,
-                eventDidMount: function (info) {
-                    info.el.setAttribute('title', info.event.extendedProps.description || "No description available");
+        /* Button styling */
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 12px 25px;
+            background-color: #ba68c8;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #9c27b0;
+            transform: scale(1.05);
+        }
+
+        /* FullCalendar container */
+        #calendar {
+            max-width: 1200px; /* Increased width for spacious layout */
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* FullCalendar toolbar */
+        .fc .fc-toolbar {
+            background-color: #f8f0fa;
+            color: #6a1b9a;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .fc .fc-button {
+            background-color: #ba68c8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1em;
+            padding: 8px 12px;
+            transition: background-color 0.3s ease;
+        }
+
+        .fc .fc-button:hover {
+            background-color: #9c27b0;
+        }
+
+        /* FullCalendar day grid styling */
+        .fc-daygrid-day {
+            border: 1px solid #e0e0e0;
+            background-color: #fdfdfd;
+            padding: 20px; /* Increased padding for more space */
+            margin-left: 300px;
+            box-sizing: border-box;
+        }
+
+        .fc-daygrid-day-number {
+            font-size: 1em;
+            color: #6a1b9a;
+        }
+
+        /* Ensure columns are evenly spaced */
+        .fc-daygrid {
+            grid-template-columns: repeat(7, 1fr); /* Ensure all days are evenly spaced */
+        }
+
+        .fc-event:hover {
+            background-color: #9c27b0;
+            cursor: pointer;
+        }
+
+        /* Adjust event popover */
+        .fc-popover {
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Container for the calendar and button */
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            color: #4a235a;
+        }
+
+        /* Message styling */
+        #n {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Message Calendar</h1>
+        <button onclick="handleRequest()">Load Events</button>
+        <div id="n"></div>
+        <div id="calendar"></div>
+    </div>
+
+    <!-- FullCalendar JS -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const fetchOptions = {
+                method: 'GET',
+                mode: 'cors',
+                headers: {
+                    'Content-Type': 'application/json',
                 },
-            });
-            calendar.render();
-        }
-    });
-</script>
+            };
+
+            // Function to fetch events
+            function request() {
+                return fetch("http://localhost:8085/api/calendar/events", fetchOptions)
+                    .then(response => {
+                        if (!response.ok) {
+                            console.error("HTTP status code: " + response.status);
+                            return null;
+                        }
+                        return response.json();
+                    })
+                    .catch(error => {
+                        console.error("Fetch error: ", error);
+                        return null;
+                    });
+            }
+
+            // Handle button click to load events
+            window.handleRequest = function () {
+                request().then(data => {
+                    if (data !== null) {
+                        const events = data.map(event => ({
+                            title: event.title,
+                            start: event.date,
+                            description: event.description,
+                            allDay: true,
+                        }));
+                        displayCalendar(events);
+                        document.getElementById("n").textContent = "";
+                    } else {
+                        document.getElementById("n").textContent = "No data available";
+                    }
+                });
+            };
+
+            // Initialize FullCalendar
+            function displayCalendar(events) {
+                const calendarEl = document.getElementById('calendar');
+                const calendar = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'dayGridMonth',
+                    events: events,
+                    eventDidMount: function (info) {
+                        info.el.setAttribute('title', info.event.extendedProps.description || "No description available");
+                    },
+                });
+                calendar.render();
+            }
+        });
+    </script>
+</body>
+</html>
