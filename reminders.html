@@ -1,0 +1,80 @@
+<link rel="stylesheet" href="calendar_features.css">
+<body>
+    <h1>Reminders for Tomorrow</h1>
+    <button onclick="handleRequest()">Get Reminders</button>
+    <ul id="reminder-list"></ul>
+
+    <!-- Overlay background for popup -->
+    <div id="overlay" onclick="closePopup()"></div>
+
+    <!-- Popup modal for reminder details -->
+    <div id="popup">
+        <h3 id="popup-title"></h3>
+        <p id="popup-description"></p>
+        <button onclick="closePopup()">Close</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const fetchOptions = {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'default',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            };
+
+            function request() {
+                return fetch("http://localhost:8085/api/calendar/reminders/tomorrow", fetchOptions)
+                    .then(response => {
+                        if (response.status !== 200) {
+                            console.error("HTTP status code: " + response.status);
+                            return null;
+                        }
+                        return response.json();
+                    })
+                    .catch(error => {
+                        console.error("Fetch error: ", error);
+                        return null;
+                    });
+            }
+
+            window.handleRequest = function() {
+                request().then(data => {
+                    if (data !== null) {
+                        displayReminders(data);
+                    } else {
+                        document.getElementById("reminder-list").innerHTML = "<li>No reminders for tomorrow.</li>";
+                    }
+                });
+            }
+
+            function displayReminders(reminders) {
+                const listEl = document.getElementById("reminder-list");
+                listEl.innerHTML = "";
+                reminders.forEach(reminder => {
+                    const li = document.createElement("li");
+                    li.textContent = reminder.title;
+                    li.onclick = () => showPopup(reminder.title, reminder.description);
+                    listEl.appendChild(li);
+                });
+            }
+
+            function showPopup(title, description) {
+                document.getElementById("popup-title").textContent = title;
+                document.getElementById("popup-description").textContent = description || "No description available";
+                document.getElementById("popup").style.display = 'block';
+                document.getElementById("overlay").style.display = 'block';
+            }
+
+            window.closePopup = function() {
+                document.getElementById("popup").style.display = 'none';
+                document.getElementById("overlay").style.display = 'none';
+            }
+
+            // Initial load of reminders
+            handleRequest();
+        });
+    </script>
+</body>
