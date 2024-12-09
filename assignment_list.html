@@ -11,68 +11,106 @@
     <div id="popup">
         <h3 id="popup-title"></h3>
         <p id="popup-description"></p>
-        <button onclick="closePopup()">Close</button>
     </div>
     <script>
-       document.addEventListener("DOMContentLoaded", function() {
-           const fetchOptions = {
-               method: 'GET',
-               mode: 'cors',
-               cache: 'default',
-               headers: {
-                   'Content-Type': 'application/json',
-               },
-           };
+        document.addEventListener("DOMContentLoaded", function () {
+            const fetchOptions = {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'default',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            };
 
-           function request() {
-               return fetch("http://localhost:8085/api/calendar/events", fetchOptions)
-                   .then(response => {
-                       if (response.status !== 200) {
-                           console.error("HTTP status code: " + response.status);
-                           return null;
-                       }
-                       return response.json();
-                   })
-                   .catch(error => {
-                       console.error("Fetch error: ", error);
-                       return null;
-                   });
-           }
+            function request() {
+                return fetch("http://localhost:8085/api/calendar/events", fetchOptions)
+                    .then(response => {
+                        if (response.status !== 200) {
+                            console.error("HTTP status code: " + response.status);
+                            return null;
+                        }
+                        return response.json();
+                    })
+                    .catch(error => {
+                        console.error("Fetch error: ", error);
+                        return null;
+                    });
+            }
 
-           window.handleRequest = function() {
-               request().then(data => {
-                   if (data !== null) {
-                       displayAssignments(data);
-                   } else {
-                       document.getElementById("assignment-list").innerHTML = "<li>No data available</li>";
-                   }
-               });
-           }
+            function getCompletedAssignments() {
+                return JSON.parse(localStorage.getItem("completedAssignments")) || [];
+            }
 
-           function displayAssignments(assignments) {
-               const listEl = document.getElementById("assignment-list");
-               listEl.innerHTML = "";
-               assignments.forEach(assignment => {
-                   const li = document.createElement("li");
-                   li.textContent = assignment.title;
-                   li.onclick = () => showPopup(assignment.title, assignment.description);
-                   listEl.appendChild(li);
-               });
-           }
+            function saveCompletedAssignments(completed) {
+                localStorage.setItem("completedAssignments", JSON.stringify(completed));
+            }
 
-           function showPopup(title, description) {
-               document.getElementById("popup-title").textContent = title;
-               document.getElementById("popup-description").textContent = description || "No description available";
-               document.getElementById("popup").style.display = 'block';
-               document.getElementById("overlay").style.display = 'block';
-           }
+            function toggleCompletion(title) {
+                const completed = getCompletedAssignments();
+                if (completed.includes(title)) {
+                    const index = completed.indexOf(title);
+                    completed.splice(index, 1);
+                } else {
+                    completed.push(title);
+                }
+                saveCompletedAssignments(completed);
+                handleRequest(); // Refresh the assignments
+            }
 
-           window.closePopup = function() {
-               document.getElementById("popup").style.display = 'none';
-               document.getElementById("overlay").style.display = 'none';
-           }
+            function isCompleted(title) {
+                return getCompletedAssignments().includes(title);
+            }
 
-           // Initial load of assignments
-           handleRequest();
-       });
+            function displayAssignments(assignments) {
+                const listEl = document.getElementById("assignment-list");
+                listEl.innerHTML = "";
+                assignments.forEach(assignment => {
+                    const li = document.createElement("li");
+
+                    // Create a checkbox for marking completion
+                    const checkbox = document.createElement("input");
+                    checkbox.type = "checkbox";
+                    checkbox.checked = isCompleted(assignment.title);
+                    checkbox.onchange = () => toggleCompletion(assignment.title);
+
+                    // Create a label for the assignment title
+                    const label = document.createElement("span");
+                    label.textContent = assignment.title;
+                    label.style.textDecoration = checkbox.checked ? "line-through" : "none";
+                    label.onclick = () => showPopup(assignment.title, assignment.description);
+
+                    // Append elements
+                    li.appendChild(checkbox);
+                    li.appendChild(label);
+                    listEl.appendChild(li);
+                });
+            }
+
+            function showPopup(title, description) {
+                document.getElementById("popup-title").textContent = title;
+                document.getElementById("popup-description").textContent = description || "No description available";
+                document.getElementById("popup").style.display = 'block';
+                document.getElementById("overlay").style.display = 'block';
+            }
+
+            window.closePopup = function () {
+                document.getElementById("popup").style.display = 'none';
+                document.getElementById("overlay").style.display = 'none';
+            };
+
+            window.handleRequest = function () {
+                request().then(data => {
+                    if (data !== null) {
+                        displayAssignments(data);
+                    } else {
+                        document.getElementById("assignment-list").innerHTML = "<li>No data available</li>";
+                    }
+                });
+            };
+
+            // Initial load of assignments
+            handleRequest();
+        });
     </script>
+</body>
