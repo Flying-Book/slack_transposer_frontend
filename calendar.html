@@ -82,6 +82,55 @@
             background-color: #9c27b0;
             transform: scale(1.05);
         }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 50%;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Input fields inside modal */
+        .modal-content input,
+        .modal-content textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        .modal-content button {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -94,10 +143,33 @@
 
     <div id="calendar"></div>
 
+    <!-- Modal -->
+    <div id="eventModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+            <h2 id="eventTitle"></h2>
+            <p><strong>Date:</strong> <span id="eventDate"></span></p>
+            <p><strong>Description:</strong> <span id="eventDescription"></span></p>
+
+            <!-- Edit Form -->
+            <div>
+                <label for="editTitle">Edit Title:</label>
+                <input type="text" id="editTitle">
+                
+                <label for="editDescription">Edit Description:</label>
+                <textarea id="editDescription" rows="3"></textarea>
+                
+                <button id="editButton">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
     <!-- FullCalendar JS -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            let currentEvent = null;  // Store the currently selected event for editing
+
             // Fetch events from the SQLite-backed API
             function fetchEvents() {
                 return fetch("http://localhost:8085/api/calendar/events", {
@@ -153,9 +225,68 @@
                     eventDidMount: function (info) {
                         info.el.setAttribute('title', info.event.extendedProps.description || "No description available");
                     },
+                    eventClick: function(info) {
+                        // Show the modal with event details (only title, date, and description)
+                        const event = info.event;
+                        currentEvent = event; // Store the selected event for editing
+
+                        document.getElementById('eventTitle').textContent = event.title;
+                        document.getElementById('eventDate').textContent = new Date(event.start).toLocaleDateString();
+                        document.getElementById('eventDescription').textContent = event.extendedProps.description || 'No description available';
+
+                        // Pre-fill the edit form with current values
+                        document.getElementById('editTitle').value = event.title;
+                        document.getElementById('editDescription').value = event.extendedProps.description || '';
+
+                        // Show the modal
+                        document.getElementById('eventModal').style.display = 'block';
+                    }
                 });
                 calendar.render();
             }
+
+            // Close the modal
+            document.getElementById('closeModal').onclick = function() {
+                document.getElementById('eventModal').style.display = 'none';
+            };
+
+            // Function to edit the event
+            function editEvent(eventData) {
+                // Ensure eventData contains the necessary ID for the event
+                eventData.id = currentEvent.id;  // Attach the current event ID for editing
+
+                fetch("http://localhost:8085/api/calendar/edit", {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(eventData)
+                })
+                .then(response => response.json())
+                .then(updatedEvent => {
+                    console.log("Event updated:", updatedEvent);
+
+                    // Update the calendar and sidebar after successful edit
+                    currentEvent.setProp('title', eventData.title);
+                    currentEvent.setExtendedProp('description', eventData.description);
+                    populateReminders([currentEvent]); // Re-populate reminders with updated data
+
+                    document.getElementById('eventModal').style.display = 'none';
+                })
+                .catch(error => {
+                    console.error("Error updating event:", error);
+                });
+            }
+
+            // Handle edit button click
+            document.getElementById('editButton').onclick = function() {
+                const updatedEventData = {
+                    title: document.getElementById('editTitle').value,
+                    description: document.getElementById('editDescription').value
+                };
+
+                editEvent(updatedEventData);
+            };
 
             // Load events and initialize everything
             fetchEvents().then(events => {
