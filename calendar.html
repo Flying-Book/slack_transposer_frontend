@@ -99,42 +99,34 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const fetchOptions = {
-                method: 'GET',
-                mode: 'cors',
-                headers: {
-                    'Authorization': 'Bearer xoxb-your-slack-token' // Replace with your actual Slack bot token
-                },
-            };
-
-            const slackChannel = 'C07SJSF6RQA'; // Slack channel ID for reminders
-
-            // Fetch Slack messages from the reminders channel
-            function fetchSlackReminders() {
-                return fetch(`https://slack.com/api/conversations.history?channel=${slackChannel}&limit=100`, fetchOptions)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.ok) {
-                            return data.messages;
-                        } else {
-                            console.error("Failed to fetch Slack messages:", data.error);
-                            return [];
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Error fetching Slack messages:", error);
-                        return [];
-                    });
+            // Fetch events from the SQLite-backed API
+            function fetchEvents() {
+                return fetch("http://localhost:8085/api/calendar/events", {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .catch(error => {
+                    console.error("Error fetching events:", error);
+                    return [];
+                });
             }
 
             // Populate the reminders sidebar
-            function populateReminders(messages) {
+            function populateReminders(events) {
                 const reminderList = document.getElementById('reminder-list');
                 reminderList.innerHTML = ""; // Clear existing reminders
 
-                messages.forEach(message => {
+                events.forEach(event => {
                     const listItem = document.createElement('li');
-                    listItem.textContent = message.text; // Use the message text as the reminder
+                    listItem.textContent = `${event.title} - ${new Date(event.start).toLocaleDateString()}`;
                     reminderList.appendChild(listItem);
                 });
             }
@@ -152,18 +144,9 @@
                 calendar.render();
             }
 
-            // Load Slack reminders and initialize everything
-            fetchSlackReminders().then(messages => {
-                populateReminders(messages);
-
-                // Simulated events for the calendar (adjust as needed)
-                const events = messages.map((msg, index) => ({
-                    title: `Reminder ${index + 1}`,
-                    start: new Date().toISOString().split('T')[0], // Example: today's date
-                    description: msg.text, // Use Slack message as description
-                    allDay: true,
-                }));
-
+            // Load events and initialize everything
+            fetchEvents().then(events => {
+                populateReminders(events);
                 initializeCalendar(events);
             });
         });
