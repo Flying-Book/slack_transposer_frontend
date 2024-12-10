@@ -14,8 +14,6 @@
             padding: 0;
             background-color: #f3e5f5;
             color: #4a235a;
-            display: flex;
-            justify-content: space-between;
         }
 
         /* Header */
@@ -28,44 +26,9 @@
             background-color: #ffffff;
             border-bottom: 3px solid #ba68c8;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            width: 100%;
         }
 
-        /* Sidebar styling */
-        .reminders {
-            width: 300px;
-            padding: 20px;
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-            margin: 20px;
-        }
-
-        .reminders h2 {
-            font-size: 1.8em;
-            color: #6a1b9a;
-            text-align: center;
-        }
-
-        .reminders ul {
-            list-style-type: none;
-            padding-left: 0;
-        }
-
-        .reminders li {
-            background-color: #f0e1f1;
-            margin: 10px 0;
-            padding: 12px;
-            border-radius: 8px;
-            color: #6a1b9a;
-        }
-
-        /* FullCalendar container */
-        #calendar {
-            flex-grow: 1;
-            margin: 20px;
-        }
-
+        /* Button styling */
         button {
             display: block;
             margin: 20px auto;
@@ -84,17 +47,98 @@
             background-color: #9c27b0;
             transform: scale(1.05);
         }
+
+        /* FullCalendar container */
+        #calendar {
+            max-width: 1200px; /* Increased width for spacious layout */
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* FullCalendar toolbar */
+        .fc .fc-toolbar {
+            background-color: #f8f0fa;
+            color: #6a1b9a;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .fc .fc-button {
+            background-color: #ba68c8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1em;
+            padding: 8px 12px;
+            transition: background-color 0.3s ease;
+        }
+
+        .fc .fc-button:hover {
+            background-color: #9c27b0;
+        }
+
+        /* FullCalendar day grid styling */
+        .fc-daygrid-day {
+            border: 1px solid #e0e0e0;
+            background-color: #fdfdfd;
+            padding: 20px; /* Increased padding for more space */
+            margin-left: 300px;
+            box-sizing: border-box;
+        }
+
+        .fc-daygrid-day-number {
+            font-size: 1em;
+            color: #6a1b9a;
+        }
+
+        /* Ensure columns are evenly spaced */
+        .fc-daygrid {
+            grid-template-columns: repeat(7, 1fr); /* Ensure all days are evenly spaced */
+        }
+
+        .fc-event:hover {
+            background-color: #9c27b0;
+            cursor: pointer;
+        }
+
+        /* Adjust event popover */
+        .fc-popover {
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Container for the calendar and button */
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            color: #4a235a;
+        }
+
+        /* Message styling */
+        #n {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            color: #d32f2f;
+        }
     </style>
 </head>
 <body>
-    <div class="reminders">
-        <h2>Upcoming Reminders</h2>
-        <ul id="reminder-list">
-            <!-- Reminders will be populated here -->
-        </ul>
+    <div class="container">
+        <h1>Message Calendar</h1>
+        <button onclick="handleRequest()">Load Events</button>
+        <div id="n"></div>
+        <div id="calendar"></div>
     </div>
-
-    <div id="calendar"></div>
 
     <!-- FullCalendar JS -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js"></script>
@@ -108,59 +152,7 @@
                 },
             };
 
-            const slackToken = 'xoxb-your-slack-token'; // Replace with your actual Slack bot token
-            const slackChannel = 'C07SJSF6RQA'; // Slack channel ID for reminders
-
-            // Fetch Slack messages from the reminders channel
-            function fetchSlackReminders() {
-                return fetch(`https://slack.com/api/conversations.history?token=${slackToken}&channel=${slackChannel}&limit=100`, fetchOptions)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.ok) {
-                            return data.messages;
-                        } else {
-                            console.error("Failed to fetch Slack messages:", data.error);
-                            return [];
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Error fetching Slack messages:", error);
-                        return [];
-                    });
-            }
-
-            // Function to filter reminders for tomorrow
-            function getRemindersForTomorrow(messages) {
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1); // Set to next day
-                tomorrow.setHours(0, 0, 0, 0);
-
-                const tomorrowTimestamp = tomorrow.getTime() / 1000; // Convert to Unix timestamp
-
-                return messages.filter(message => {
-                    const messageDate = new Date(message.ts * 1000); // Convert message timestamp to Date
-                    return messageDate >= tomorrowTimestamp && messageDate < tomorrowTimestamp + 86400000; // Check if it's tomorrow
-                });
-            }
-
-            // Display reminders on the page
-            function displayReminders(reminders) {
-                const reminderListEl = document.getElementById("reminder-list");
-                reminderListEl.innerHTML = "";
-
-                if (reminders.length === 0) {
-                    reminderListEl.innerHTML = "<li>No reminders for tomorrow.</li>";
-                    return;
-                }
-
-                reminders.forEach(reminder => {
-                    const li = document.createElement("li");
-                    li.textContent = reminder.text; // Assuming the message text contains the reminder content
-                    reminderListEl.appendChild(li);
-                });
-            }
-
-            // Fetch and display events for the calendar
+            // Function to fetch events
             function request() {
                 return fetch("http://localhost:8085/api/calendar/events", fetchOptions)
                     .then(response => {
@@ -206,12 +198,6 @@
                 });
                 calendar.render();
             }
-
-            // Fetch Slack reminders for tomorrow and display them
-            fetchSlackReminders().then(messages => {
-                const remindersForTomorrow = getRemindersForTomorrow(messages);
-                displayReminders(remindersForTomorrow);
-            });
         });
     </script>
 </body>
