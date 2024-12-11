@@ -1,8 +1,7 @@
 <link rel="stylesheet" href="calendar_features.css">
 <body>
     <h1>Assignment List</h1>
-    <button onclick="handleRequest()">Reload Assignments</button>
-    <ul id="assignment-list"></ul>
+    <ul id="assignment-list" style="list-style-type: none; padding: 0;"></ul>
 
     <!-- Overlay background for popup -->
     <div id="overlay" onclick="closePopup()"></div>
@@ -12,6 +11,72 @@
         <h3 id="popup-title"></h3>
         <p id="popup-description"></p>
     </div>
+
+    <style>
+        /* Adjusting body, list, and items using your existing CSS styling */
+        #assignment-list {
+            margin-top: 20px;
+            width: 80%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: left;
+        }
+
+        /* Style each list item */
+        #assignment-list div {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 1.2rem; /* Larger font size */
+            font-family: 'Arial', sans-serif; /* Consistent with body font */
+            color: #4a235a; /* Color from your body styling */
+        }
+
+        #assignment-list input[type="checkbox"] {
+            margin-right: 15px;
+            cursor: pointer;
+        }
+
+        #assignment-list span {
+            cursor: pointer;
+            transition: color 0.3s ease, text-decoration 0.3s ease;
+        }
+
+        #assignment-list span:hover {
+            color: #9c27b0; /* Hover effect from your button */
+            text-decoration: underline;
+        }
+
+        /* Style the popup */
+        #popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ba68c8; /* Border color matching your button color */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 80%;
+            width: 400px;
+            z-index: 1000;
+        }
+
+        /* Overlay background */
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+    </style>
+
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const fetchOptions = {
@@ -66,7 +131,7 @@
                 const listEl = document.getElementById("assignment-list");
                 listEl.innerHTML = "";
                 assignments.forEach(assignment => {
-                    const li = document.createElement("li");
+                    const div = document.createElement("div");
 
                     // Create a checkbox for marking completion
                     const checkbox = document.createElement("input");
@@ -81,9 +146,9 @@
                     label.onclick = () => showPopup(assignment.title, assignment.description);
 
                     // Append elements
-                    li.appendChild(checkbox);
-                    li.appendChild(label);
-                    listEl.appendChild(li);
+                    div.appendChild(checkbox);
+                    div.appendChild(label);
+                    listEl.appendChild(div);
                 });
             }
 
