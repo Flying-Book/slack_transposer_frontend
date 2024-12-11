@@ -169,10 +169,10 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             let currentEvent = null;  // Store the currently selected event for editing
-
-            // Fetch events from the SQLite-backed API
+    
+            // Fetch events from the next-day API
             function fetchEvents() {
-                return fetch("http://localhost:8085/api/calendar/events", {
+                return fetch("http://localhost:8085/api/calendar/events/next-day", {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
@@ -189,39 +189,35 @@
                     return [];
                 });
             }
-
-            // Populate the reminders sidebar
+    
+            // Function to format dates properly
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString();  // Formats the date as MM/DD/YYYY
+            }
+    
+            // Populate the reminders sidebar with all events
             function populateReminders(events) {
                 const reminderList = document.getElementById('reminder-list');
                 reminderList.innerHTML = ""; // Clear existing reminders
 
-                // Get the current date and next day
-                const currentDate = new Date();
-                currentDate.setHours(0, 0, 0, 0); // Set to midnight
-                const nextDay = new Date(currentDate);
-                nextDay.setDate(currentDate.getDate() + 1); // Get the next day
-
-                // Filter events to show only those happening the next day
-                const filteredEvents = events.filter(event => {
-                    const eventDate = new Date(event.start);
-                    eventDate.setHours(0, 0, 0, 0); // Set event time to midnight for comparison
-                    return eventDate.getTime() === nextDay.getTime();
-                });
-
-                // Display only the events happening the next day
-                filteredEvents.forEach(event => {
-                    const listItem = document.createElement('li');
-                    listItem.textContent = `${event.title} - ${new Date(event.start).toLocaleDateString()}`;
-                    reminderList.appendChild(listItem);
-                });
+                if (events.length === 0) {
+                    reminderList.innerHTML = "<li>No events available.</li>";
+                } else {
+                    events.forEach(event => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `${event.title} - ${formatDate(event.start)}`;
+                        reminderList.appendChild(listItem);
+                    });
+                }
             }
-
+    
             // Initialize calendar
             function initializeCalendar(events) {
                 const calendarEl = document.getElementById('calendar');
                 const calendar = new FullCalendar.Calendar(calendarEl, {
                     initialView: 'dayGridMonth',
-                    events: events,
+                    events: events, // Display all events in the calendar
                     eventDidMount: function (info) {
                         info.el.setAttribute('title', info.event.extendedProps.description || "No description available");
                     },
@@ -229,32 +225,32 @@
                         // Show the modal with event details (only title, date, and description)
                         const event = info.event;
                         currentEvent = event; // Store the selected event for editing
-
+    
                         document.getElementById('eventTitle').textContent = event.title;
-                        document.getElementById('eventDate').textContent = new Date(event.start).toLocaleDateString();
+                        document.getElementById('eventDate').textContent = formatDate(event.start);  // Correctly format date
                         document.getElementById('eventDescription').textContent = event.extendedProps.description || 'No description available';
-
+    
                         // Pre-fill the edit form with current values
                         document.getElementById('editTitle').value = event.title;
                         document.getElementById('editDescription').value = event.extendedProps.description || '';
-
+    
                         // Show the modal
                         document.getElementById('eventModal').style.display = 'block';
                     }
                 });
                 calendar.render();
             }
-
+    
             // Close the modal
             document.getElementById('closeModal').onclick = function() {
                 document.getElementById('eventModal').style.display = 'none';
             };
-
+    
             // Function to edit the event
             function editEvent(eventData) {
                 // Ensure eventData contains the necessary ID for the event
                 eventData.id = currentEvent.id;  // Attach the current event ID for editing
-
+    
                 fetch("http://localhost:8085/api/calendar/edit", {
                     method: 'PUT',
                     headers: {
@@ -265,33 +261,33 @@
                 .then(response => response.json())
                 .then(updatedEvent => {
                     console.log("Event updated:", updatedEvent);
-
+    
                     // Update the calendar and sidebar after successful edit
                     currentEvent.setProp('title', eventData.title);
                     currentEvent.setExtendedProp('description', eventData.description);
                     populateReminders([currentEvent]); // Re-populate reminders with updated data
-
+    
                     document.getElementById('eventModal').style.display = 'none';
                 })
                 .catch(error => {
                     console.error("Error updating event:", error);
                 });
             }
-
+    
             // Handle edit button click
             document.getElementById('editButton').onclick = function() {
                 const updatedEventData = {
                     title: document.getElementById('editTitle').value,
                     description: document.getElementById('editDescription').value
                 };
-
+    
                 editEvent(updatedEventData);
             };
-
+    
             // Load events and initialize everything
             fetchEvents().then(events => {
-                populateReminders(events);
-                initializeCalendar(events);
+                initializeCalendar(events); // Show all events in the calendar
+                populateReminders(events);  // Show all events in the reminders
             });
         });
     </script>
