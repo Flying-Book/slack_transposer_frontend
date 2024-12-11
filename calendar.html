@@ -218,19 +218,21 @@
 
     // Populate the reminders sidebar with next-day events
     function populateReminders(events) {
-        const reminderList = document.getElementById('reminder-list');
-        reminderList.innerHTML = ""; // Clear existing reminders
+    const reminderList = document.getElementById('reminder-list');
+    reminderList.innerHTML = ""; // Clear existing reminders
 
-        if (events.length === 0) {
-            reminderList.innerHTML = "<li>No events for tomorrow.</li>";
-        } else {
-            events.forEach(event => {
-                const listItem = document.createElement('li');
-                listItem.textContent = `${event.title} - ${formatDate(event.start)}`;
-                reminderList.appendChild(listItem);
-            });
-        }
+    if (!events || events.length === 0) {
+        reminderList.innerHTML = "<li>No events for tomorrow.</li>";
+    } else {
+        events.forEach(event => {
+            const listItem = document.createElement('li');
+            const formattedDate = event.start ? formatDate(event.start) : "Tomorrow";
+            listItem.textContent = `${event.title} - ${formattedDate}`;
+            reminderList.appendChild(listItem);
+        });
     }
+}
+
 
     // Initialize calendar
     function initializeCalendar(events) {
