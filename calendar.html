@@ -168,153 +168,141 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-    let currentEvent = null;  // Store the currently selected event for editing
+            let currentEvent = null;  // Store the currently selected event for editing
 
-    // Fetch all events for the calendar
-    function fetchAllEvents() {
-        return fetch("http://localhost:8085/api/calendar/events", {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
+            // Fetch all events for the calendar
+            function fetchAllEvents() {
+                return fetch("http://localhost:8085/api/calendar/events", {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .catch(error => {
+                    console.error("Error fetching all events:", error);
+                    return [];
+                });
             }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+
+            // Fetch events for the next day for the reminders
+            function fetchNextDayEvents() {
+                return fetch("http://localhost:8085/api/calendar/events/next-day", {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .catch(error => {
+                    console.error("Error fetching next-day events:", error);
+                    return [];
+                });
             }
-            return response.json();
-        })
-        .catch(error => {
-            console.error("Error fetching all events:", error);
-            return [];
-        });
-    }
 
-    // Fetch events for the next day for the reminders
-    function fetchNextDayEvents() {
-        return fetch("http://localhost:8085/api/calendar/events/next-day", {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
+            // Function to format dates properly
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString();  // Formats the date as MM/DD/YYYY
             }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+
+            // Populate the reminders sidebar with next-day events
+            function populateReminders(events) {
+                const reminderList = document.getElementById('reminder-list');
+                reminderList.innerHTML = ""; // Clear existing reminders
+
+                if (!events || events.length === 0) {
+                    reminderList.innerHTML = "<li>No events for tomorrow.</li>";
+                } else {
+                    events.forEach(event => {
+                        const listItem = document.createElement('li');
+                        const formattedDate = event.start ? formatDate(event.start) : "Tomorrow";
+                        listItem.textContent = `${event.title} - ${formattedDate}`;
+                        reminderList.appendChild(listItem);
+                    });
+                }
             }
-            return response.json();
-        })
-        .catch(error => {
-            console.error("Error fetching next-day events:", error);
-            return [];
-        });
-    }
 
-    // Function to format dates properly
-    function formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString();  // Formats the date as MM/DD/YYYY
-    }
+            // Initialize calendar
+            function initializeCalendar(events) {
+                const calendarEl = document.getElementById('calendar');
+                const calendar = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'dayGridMonth',
+                    events: events, // Display all events in the calendar
+                    eventDidMount: function (info) {
+                        info.el.setAttribute('title', info.event.extendedProps.description || "No description available");
+                    },
+                    eventClick: function(info) {
+                        // Show the modal with event details (only title, date, and description)
+                        const event = info.event;
+                        currentEvent = event; // Store the selected event for editing
 
-    // Populate the reminders sidebar with next-day events
-    function populateReminders(events) {
-    const reminderList = document.getElementById('reminder-list');
-    reminderList.innerHTML = ""; // Clear existing reminders
+                        document.getElementById('eventTitle').textContent = event.title;
+                        document.getElementById('eventDate').textContent = formatDate(event.start);  // Correctly format date
+                        document.getElementById('eventDescription').textContent = event.extendedProps.description || 'No description available';
 
-    if (!events || events.length === 0) {
-        reminderList.innerHTML = "<li>No events for tomorrow.</li>";
-    } else {
-        events.forEach(event => {
-            const listItem = document.createElement('li');
-            const formattedDate = event.start ? formatDate(event.start) : "Tomorrow";
-            listItem.textContent = `${event.title} - ${formattedDate}`;
-            reminderList.appendChild(listItem);
-        });
-    }
-}
+                        // Pre-fill the edit form with current values
+                        document.getElementById('editTitle').value = event.title;
+                        document.getElementById('editDescription').value = event.extendedProps.description || '';
 
-
-    // Initialize calendar
-    function initializeCalendar(events) {
-        const calendarEl = document.getElementById('calendar');
-        const calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            events: events, // Display all events in the calendar
-            eventDidMount: function (info) {
-                info.el.setAttribute('title', info.event.extendedProps.description || "No description available");
-            },
-            eventClick: function(info) {
-                // Show the modal with event details (only title, date, and description)
-                const event = info.event;
-                currentEvent = event; // Store the selected event for editing
-
-                document.getElementById('eventTitle').textContent = event.title;
-                document.getElementById('eventDate').textContent = formatDate(event.start);  // Correctly format date
-                document.getElementById('eventDescription').textContent = event.extendedProps.description || 'No description available';
-
-                // Pre-fill the edit form with current values
-                document.getElementById('editTitle').value = event.title;
-                document.getElementById('editDescription').value = event.extendedProps.description || '';
-
-                // Show the modal
-                document.getElementById('eventModal').style.display = 'block';
+                        // Show the modal
+                        document.getElementById('eventModal').style.display = 'block';
+                    }
+                });
+                calendar.render();
             }
+
+            // Close the modal
+            document.getElementById('closeModal').onclick = function() {
+                document.getElementById('eventModal').style.display = 'none';
+            };
+
+            // Function to edit the event
+            function editEvent(eventData) {
+                eventData.id = currentEvent.id;  // Attach the current event ID for editing
+
+                fetch("http://localhost:8085/api/calendar/edit", {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(eventData)
+                })
+                .then(response => response.json())
+                .then(updatedEvent => {
+                    console.log("Event updated:", updatedEvent);
+
+                    // Update the calendar and sidebar after successful edit
+                    currentEvent.setProp('title', eventData.title);
+                    currentEvent.setExtendedProp('description', eventData.description);
+
+                    document.getElementById('eventModal').style.display = 'none';
+                })
+                .catch(error => {
+                    console.error("Error updating event:", error);
+                });
+            }
+
+            // Handle edit button click
+            document.getElementById('editButton').onclick = function() {
+                const updatedEventData = {
+                    title: document.getElementById('editTitle').value,
+                    description: document.getElementById('editDescription').value
+                };
+
+                editEvent(updatedEventData);
+            };
+
+            // Load events and initialize everything
+            fetchAllEvents().then(allEvents => {
+                initializeCalendar(allEvents); // Show all events in the calendar
+            });
+
+            fetchNextDayEvents().then(nextDayEvents => {
+                populateReminders(nextDayEvents); // Show only the next-day events in the sidebar
+            });
         });
-        calendar.render();
-    }
-
-    // Close the modal
-    document.getElementById('closeModal').onclick = function() {
-        document.getElementById('eventModal').style.display = 'none';
-    };
-
-    // Function to edit the event
-    function editEvent(eventData) {
-        // Ensure eventData contains the necessary ID for the event
-        eventData.id = currentEvent.id;  // Attach the current event ID for editing
-
-        fetch("http://localhost:8085/api/calendar/edit", {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(eventData)
-        })
-        .then(response => response.json())
-        .then(updatedEvent => {
-            console.log("Event updated:", updatedEvent);
-
-            // Update the calendar and sidebar after successful edit
-            currentEvent.setProp('title', eventData.title);
-            currentEvent.setExtendedProp('description', eventData.description);
-
-            document.getElementById('eventModal').style.display = 'none';
-        })
-        .catch(error => {
-            console.error("Error updating event:", error);
-        });
-    }
-
-    // Handle edit button click
-    document.getElementById('editButton').onclick = function() {
-        const updatedEventData = {
-            title: document.getElementById('editTitle').value,
-            description: document.getElementById('editDescription').value
-        };
-
-        editEvent(updatedEventData);
-    };
-
-    // Load events and initialize everything
-    fetchAllEvents().then(allEvents => {
-        initializeCalendar(allEvents); // Show all events in the calendar
-    });
-
-    fetchNextDayEvents().then(nextDayEvents => {
-        populateReminders(nextDayEvents); // Show next-day events in the reminders
-    });
-});
-
     </script>
 </body>
 </html>
+
