@@ -3,6 +3,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.css">
+    <link rel="stylesheet" href="calendar_features.css">
     <title>Message Calendar</title>
     <style>
         /* General body styling */
@@ -99,10 +100,11 @@
         .modal-content {
             background-color: white;
             margin: 5% auto;
-            padding: 20px;
+            padding: 40px;  /* Reduced padding */
             border-radius: 8px;
-            width: 50%;
-        }
+            width: 30%;  /* Reduced width */
+            margin-top: -7%;  /* Moves the modal closer to the top */
+    }
 
         .close {
             color: #aaa;
@@ -131,9 +133,63 @@
         .modal-content button {
             margin-top: 20px;
         }
+
+        /* Styling for Add Event Form */
+        #addEventForm {
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #ffffff; /* White background */
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            border: 2px solid #ba68c8; /* Purple border */
+        }
+
+        #addEventForm label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #6a1b9a; /* Purple text */
+        }
+
+        #addEventForm input,
+        #addEventForm textarea,
+        #addEventForm select {
+            width: 100%;
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        #addEventForm textarea {
+            resize: vertical;
+        }
+
+        #addEventForm button {
+            display: block;
+            margin: 0 auto;
+            padding: 12px 25px;
+            background-color: #ba68c8; /* Purple background */
+            color: white; /* White text */
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        #addEventForm button:hover {
+            background-color: #9c27b0; /* Darker purple on hover */
+            transform: scale(1.05); /* Subtle hover effect */
+        }
     </style>
 </head>
 <body>
+
     <div class="reminders">
         <h2>Upcoming Reminders</h2>
         <ul id="reminder-list">
@@ -143,7 +199,34 @@
 
     <div id="calendar"></div>
 
-    <!-- Modal -->
+    <!-- Add Event Modal -->
+    <div id="addEventModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeAddEventModal">&times;</span>
+            <h1>Add Events</h1>
+            <form id="addEventForm">
+                <label for="date">Date (YYYY-MM-DD):</label>
+                <input type="date" id="date" name="date" required>
+    
+                <label for="title">Title:</label>
+                <input type="text" id="title" name="title" placeholder="Enter event title" required>
+    
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" rows="4" placeholder="Enter event description here..."></textarea>
+    
+                <label for="type">Event Type:</label>
+                <select id="type" name="type">
+                    <option value="daily plan">Daily Plan</option>
+                    <option value="check-in">Check-in</option>
+                    <option value="Grade">Grade</option>
+                </select>
+    
+                <button type="submit">Add Event</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Event Details Modal -->
     <div id="eventModal" class="modal">
         <div class="modal-content">
             <span class="close" id="closeModal">&times;</span>
@@ -169,6 +252,8 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             let currentEvent = null;  // Store the currently selected event for editing
+            let calendar;
+            let selectedDate = null;  // Store the date selected for new events
 
             // Fetch all events for the calendar
             function fetchAllEvents() {
@@ -226,7 +311,7 @@
             // Initialize calendar
             function initializeCalendar(events) {
                 const calendarEl = document.getElementById('calendar');
-                const calendar = new FullCalendar.Calendar(calendarEl, {
+                calendar = new FullCalendar.Calendar(calendarEl, {
                     initialView: 'dayGridMonth',
                     events: events, // Display all events in the calendar
                     eventDidMount: function (info) {
@@ -247,50 +332,85 @@
 
                         // Show the modal
                         document.getElementById('eventModal').style.display = 'block';
+                    },
+                    dateClick: function(info) {
+                        // Open the add event modal when a date is clickedvhk
+                        selectedDate = info.dateStr;  // Set the selected date for the new event
+                        document.getElementById('addEventModal').style.display = 'block';
                     }
                 });
                 calendar.render();
             }
 
-            // Close the modal
+            // Close the Add Event modal
+            document.getElementById('closeAddEventModal').onclick = function() {
+                document.getElementById('addEventModal').style.display = 'none';
+            };
+
+            // Close the Event Details modal
             document.getElementById('closeModal').onclick = function() {
                 document.getElementById('eventModal').style.display = 'none';
             };
 
-            // Function to edit the event
-            function editEvent(eventData) {
-                eventData.id = currentEvent.id;  // Attach the current event ID for editing
-
-                fetch("http://localhost:8085/api/calendar/edit", {
+                        // Edit event
+                        document.getElementById('editButton').onclick = function () {
+                const updatedTitle = document.getElementById('editTitle').value.trim();
+                const updatedDescription = document.getElementById('editDescription').value.trim();
+                if (!updatedTitle || !updatedDescription) {
+                    alert("Title and Description cannot be empty!");
+                    return;
+                }
+                const payload = { newTitle: updatedTitle, description: updatedDescription };
+                fetch(`http://localhost:8085/api/calendar/edit/${encodeURIComponent(currentEvent.title)}`, {
                     method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error("Failed to update event");
+                    return response.text();
+                })
+                .then(() => {
+                    currentEvent.setProp('title', updatedTitle);
+                    currentEvent.setExtendedProp('description', updatedDescription);
+                    document.getElementById('eventModal').style.display = 'none';
+                })
+                .catch(error => alert("Error: " + error.message));
+            };
+
+
+            // Handle Add Event form submission
+            document.getElementById('addEventForm').onsubmit = function(event) {
+                event.preventDefault();
+                const title = document.getElementById('eventTitle').value;
+                const description = document.getElementById('eventDescription').value;
+
+                const newEvent = {
+                    title: title,
+                    description: description,
+                    start: selectedDate,  // Store the selected date
+                    end: selectedDate
+                };
+
+                // Add new event
+                fetch("http://localhost:8085/api/calendar/add_event", {
+                    method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(eventData)
+                    body: JSON.stringify(newEvent)
                 })
                 .then(response => response.json())
-                .then(updatedEvent => {
-                    console.log("Event updated:", updatedEvent);
-
-                    // Update the calendar and sidebar after successful edit
-                    currentEvent.setProp('title', eventData.title);
-                    currentEvent.setExtendedProp('description', eventData.description);
-
-                    document.getElementById('eventModal').style.display = 'none';
+                .then(addedEvent => {
+                    calendar.addEvent(addedEvent);  // Add the event to FullCalendar
+                    document.getElementById('addEventModal').style.display = 'none';  // Close the modal
+                    fetchAllEvents().then(allEvents => {
+                        initializeCalendar(allEvents);  // Refresh the calendar with updated events
+                    });
                 })
                 .catch(error => {
-                    console.error("Error updating event:", error);
+                    console.error("Error adding event:", error);
                 });
-            }
-
-            // Handle edit button click
-            document.getElementById('editButton').onclick = function() {
-                const updatedEventData = {
-                    title: document.getElementById('editTitle').value,
-                    description: document.getElementById('editDescription').value
-                };
-
-                editEvent(updatedEventData);
             };
 
             // Load events and initialize everything
@@ -298,11 +418,42 @@
                 initializeCalendar(allEvents); // Show all events in the calendar
             });
 
-            fetchNextDayEvents().then(nextDayEvents => {
-                populateReminders(nextDayEvents); // Show only the next-day events in the sidebar
+            // Fetch and populate reminders for next day
+            fetchNextDayEvents().then(events => {
+                populateReminders(events);
             });
         });
     </script>
 </body>
 </html>
 
+<script>
+    document.getElementById("addEventForm").addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const formData = {
+            date: document.getElementById("date").value,
+            title: document.getElementById("title").value,
+            description: document.getElementById("description").value,
+            type: document.getElementById("type").value
+        };
+
+        fetch("http://localhost:8085/api/calendar/add_event", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => {
+            if (response.ok) {
+                alert("Event added successfully!");
+                document.getElementById("addEventForm").reset();
+            } else {
+                alert("Failed to add event.");
+            }
+        })
+        .catch(error => console.error("Error adding event:", error));
+    });
+</script>
+</body>
