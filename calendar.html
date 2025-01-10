@@ -334,11 +334,14 @@
                         document.getElementById('eventModal').style.display = 'block';
                     },
                     dateClick: function(info) {
-                        // Open the add event modal when a date is clickedvhk
+                        // Automatically select the clicked date and set it in the form
                         selectedDate = info.dateStr;  // Set the selected date for the new event
-                        document.getElementById('addEventModal').style.display = 'block';
+                        document.getElementById('date').value = selectedDate;  // Automatically fill the date field in the modal
+                        document.getElementById('addEventModal').style.display = 'block';  // Open the modal
                     }
-                });
+
+                    }
+                );
                 calendar.render();
             }
 
